@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">New Sale</h2>
+                </div>
+                <div class="card-body">
+                    <form id="saleForm">
+                        <!-- IMEI Scanner Section -->
+                        <div class="mb-4">
+                            <label for="imei" class="form-label">Device IMEI</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="imei" required 
+                                       pattern="[0-9]{15}" maxlength="15"
+                                       placeholder="Scan or enter 15-digit IMEI">
+                                <button type="button" class="btn btn-primary" onclick="findDevice()">
+                                    Find Device
+                                </button>
+                            </div>
+                            <div class="form-text">Scan barcode or enter 15-digit IMEI number</div>
+                        </div>
+
+                        <!-- Device Details Section (hidden initially) -->
+                        <div id="deviceDetails" style="display: none;">
+                            <div class="alert alert-info mb-4">
+                                <h4 class="alert-heading mb-2">Device Information</h4>
+                                <p class="mb-1"><strong>Brand:</strong> <span id="deviceBrand"></span></p>
+                                <p class="mb-1"><strong>Model:</strong> <span id="deviceModel"></span></p>
+                                <p class="mb-0"><strong>Purchase Price:</strong> $<span id="devicePurchasePrice"></span></p>
+                            </div>
+
+                            <!-- Sale Details -->
+                            <div class="mb-3">
+                                <label for="salePrice" class="form-label">Sale Price</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="salePrice" 
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="paymentType" class="form-label">Payment Type</label>
+                                <select class="form-select" id="paymentType" required onchange="togglePaymentFields()">
+                                    <option value="">Select payment type</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="credit">Credit</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="amountPaid" class="form-label">Amount Paid</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="amountPaid" 
+                                           step="0.01" min="0" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Notes</label>
+                                <textarea class="form-control" id="notes" rows="3"></textarea>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    Complete Sale
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentDevice = null;
+
+async function findDevice() {
+    const imei = document.getElementById('imei').value;
+    if (!imei || imei.length !== 15) {
+        alert('Please enter a valid 15-digit IMEI number');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/sales/device/${imei}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            currentDevice = data;
+            document.getElementById('deviceBrand').textContent = data.brand;
+            document.getElementById('deviceModel').textContent = data.model;
+            document.getElementById('devicePurchasePrice').textContent = data.purchase_price;
+            document.getElementById('deviceDetails').style.display = 'block';
+        } else {
+            alert(data.error || 'Device not found');
+            resetForm();
+        }
+    } catch (error) {
+        alert('Error finding device');
+        resetForm();
+    }
+}
+
+function togglePaymentFields() {
+    const paymentType = document.getElementById('paymentType').value;
+    const amountPaid = document.getElementById('amountPaid');
+    const salePrice = document.getElementById('salePrice').value;
+    
+    if (paymentType === 'cash') {
+        amountPaid.value = salePrice;
+        amountPaid.readOnly = true;
+    } else {
+        amountPaid.readOnly = false;
+        amountPaid.value = '';
+    }
+}
+
+function resetForm() {
+    document.getElementById('saleForm').reset();
+    document.getElementById('deviceDetails').style.display = 'none';
+    currentDevice = null;
+}
+
+document.getElementById('saleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentDevice) {
+        alert('Please scan a device first');
+        return;
+    }
+    
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const amountPaid = parseFloat(document.getElementById('amountPaid').value);
+    
+    if (amountPaid > salePrice) {
+        alert('Amount paid cannot be greater than sale price');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/sales/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                imei: currentDevice.imei,
+                sale_price: salePrice,
+                payment_type: document.getElementById('paymentType').value,
+                amount_paid: amountPaid,
+                notes: document.getElementById('notes').value
+            })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert('Sale recorded successfully!');
+            window.location.href = '/sales';
+        } else {
+            alert(data.error || 'Failed to record sale');
+        }
+    } catch (error) {
+        alert('Error recording sale');
+    }
+});
+
+// Update amount paid when sale price changes (for cash payments)
+document.getElementById('salePrice').addEventListener('change', function() {
+    if (document.getElementById('paymentType').value === 'cash') {
+        document.getElementById('amountPaid').value = this.value;
+    }
+});
+</script>
+{% endblock %}
