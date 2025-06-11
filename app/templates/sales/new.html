@@ -252,8 +252,11 @@ function startScanner(imeiFieldId) {
         },
         decoder : {
             readers : ["ean_reader"] // List of active readers
-        },
-    }// Initialize scan functionality on page load
+        }
+    });
+    // Initialize scan functionality on page load
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // After scan callback
     document.addEventListener('barcodeScanned', function(e) {
