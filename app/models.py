@@ -15,9 +15,12 @@ class User(UserMixin, db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     
     # Relationships
     sales = db.relationship('Sale', backref='seller', lazy='dynamic')
+    created_by = db.relationship('User', backref='created_users',
+                               remote_side=[id], uselist=False)
 
     def set_password(self, password):
         """Hash and set user password using bcrypt"""
