@@ -5,7 +5,7 @@ from app.routes.main import bp
 @bp.route('/')
 @login_required
 def index():
-    return redirect(url_for('web_reports.dashboard'))
+    return redirect(url_for('reports.dashboard'))
 
 @bp.route('/profile')
 @login_required
