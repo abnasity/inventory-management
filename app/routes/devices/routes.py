@@ -10,7 +10,8 @@ from app import db
 @login_required
 def inventory():
     devices = Device.query.all()
-    return render_template('devices/inventory.html', devices=devices)
+    device_form = DeviceForm()  # Form for the add device modal
+    return render_template('devices/inventory.html', devices=devices, device_form=device_form)
 
 @bp.route('/device/add', methods=['GET', 'POST'])
 @login_required
