@@ -2,10 +2,6 @@
 
 {% block title %}Dashboard - Phone Sales Management{% endblock %}
 
-{% block extra_css %}
-<!-- Add custom CSS here if needed -->
-{% endblock %}
-
 {% block content %}
 <!-- Header -->
 <div class="row mb-4">
@@ -137,7 +133,8 @@
         </div>
     </div>
 </div>
-{% endblock %}
+
+{% endblock content %}
 
 {% block extra_js %}
 <!-- Chart.js -->
@@ -169,11 +166,10 @@
             }
         };
 
-                const dashboardData = {
-                    stats: Object.assign({})
-                };
-            } catch (err) {
-                console.error('Dashboard JS error:', err);
-            }
-        </script>
-        {% endblock %}
+        const dashboardData = Object.assign({}, defaultData);
+        initializeDashboard(dashboardData);
+    } catch (err) {
+        console.error('Dashboard JS error:', err);
+    }
+</script>
+{% endblock extra_js %}
