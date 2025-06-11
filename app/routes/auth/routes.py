@@ -41,9 +41,46 @@ def logout():
 @login_required
 @admin_required
 def users():
-    users = User.query.all()
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    search = request.args.get('search', '')
+    role_filter = request.args.get('role', '')
+    status_filter = request.args.get('status', '')
+    
+    query = User.query
+    
+    # Apply search filter
+    if search:
+        query = query.filter(
+            db.or_(
+                User.username.ilike(f'%{search}%'),
+                User.email.ilike(f'%{search}%')
+            )
+        )
+    
+    # Apply role filter
+    if role_filter:
+        query = query.filter(User.role == role_filter)
+    
+    # Apply status filter
+    if status_filter:
+        is_active = status_filter == 'active'
+        query = query.filter(User.is_active == is_active)
+    
+    # Apply pagination
+    pagination = query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
     form = RegisterForm()  # Form for the add user modal
-    return render_template('auth/users.html', users=users, form=form)
+    
+    return render_template('auth/users.html',
+                         users=pagination.items,
+                         pagination=pagination,
+                         search=search,
+                         role_filter=role_filter,
+                         status_filter=status_filter,
+                         form=form)
 
 @bp.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -79,31 +116,20 @@ def profile():
 @login_required
 @admin_required
 def create_user():
-    username = request.form.get('username')
-    email = request.form.get('email')
-    password = request.form.get('password')
-    role = request.form.get('role')
+    form = RegisterForm()
     
-    if not all([username, email, password, role]) or role not in ['admin', 'staff']:
-        flash('Please fill in all required fields correctly', 'danger')
-        return redirect(url_for('auth.users'))
-    
-    # Check if user already exists
-    if User.query.filter_by(username=username).first():
-        flash('Username already exists', 'danger')
-        return redirect(url_for('auth.users'))
-    if User.query.filter_by(email=email).first():
-        flash('Email already registered', 'danger')
-        return redirect(url_for('auth.users'))
-    
-    # Create new user
-    user = User(username=username, email=email, role=role)
-    user.set_password(password)
-    db.session.add(user)
+    if form.validate_on_submit():
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            role=form.role.data
+        )
+        user.set_password(form.password.data)
+        db.session.add(user)
     
     try:
         db.session.commit()
-        flash(f'User {username} has been created successfully', 'success')
+        flash(f'User {user.username} has been created successfully', 'success')
     except Exception as e:
         db.session.rollback()
         flash('Error creating user', 'danger')
@@ -143,6 +169,43 @@ def get_user(user_id):
         'email': user.email,
         'role': user.role
     })
+
+@bp.route('/users/bulk_status', methods=['POST'])
+@login_required
+@admin_required
+def bulk_update_status():
+    """Handle bulk user status updates"""
+    data = request.get_json()
+    
+    if not data or 'user_ids' not in data or 'activate' not in data:
+        return jsonify({'success': False, 'error': 'Invalid request data'}), 400
+        
+    user_ids = data['user_ids']
+    activate = data['activate']
+    
+    try:
+        # Don't allow modifying current user's status
+        users = User.query.filter(
+            User.id.in_(user_ids),
+            User.id != current_user.id
+        ).all()
+        
+        for user in users:
+            user.is_active = activate
+            
+        db.session.commit()
+        action = 'activated' if activate else 'deactivated'
+        return jsonify({
+            'success': True,
+            'message': f'{len(users)} users have been {action}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Database error: {str(e)}'
+        }), 500
 
 @bp.route('/users/<int:user_id>/edit', methods=['POST'])
 @login_required
