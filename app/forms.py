@@ -34,3 +34,72 @@ class ProfileForm(FlaskForm):
             user = User.query.filter_by(email=email.data).first()
             if user:
                 raise ValidationError('Email already registered. Please use a different one.')
+
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=64)])
+    email = StringField('Email', validators=[DataRequired(), Email(), Length(max=120)])
+    password = PasswordField('Password', validators=[DataRequired()])
+    is_admin = BooleanField('Admin Access')
+    submit = SubmitField('Create User')
+
+    def validate_username(self, username):
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Username already in use. Please choose a different one.')
+
+    def validate_email(self, email):
+        user = User.query.filter_by(email=email.data).first()
+        if user:
+            raise ValidationError('Email already registered. Please use a different one.')
+
+class DeviceForm(FlaskForm):
+    imei = StringField('IMEI', validators=[
+        DataRequired(),
+        Length(min=15, max=15, message='IMEI must be exactly 15 digits')
+    ])
+    brand = StringField('Brand', validators=[DataRequired(), Length(max=50)])
+    model = StringField('Model', validators=[DataRequired(), Length(max=100)])
+    purchase_price = DecimalField('Purchase Price', 
+        validators=[DataRequired(), NumberRange(min=0)],
+        places=2
+    )
+    notes = TextAreaField('Notes')
+    submit = SubmitField('Save Device')
+
+    def validate_imei(self, imei):
+        from app.models import Device
+        device = Device.query.filter_by(imei=imei.data).first()
+        if device:
+            raise ValidationError('This IMEI is already registered in the system.')
+
+class SaleForm(FlaskForm):
+    imei = StringField('IMEI', validators=[
+        DataRequired(),
+        Length(min=15, max=15, message='IMEI must be exactly 15 digits')
+    ])
+    sale_price = DecimalField('Sale Price',
+        validators=[DataRequired(), NumberRange(min=0)],
+        places=2
+    )
+    payment_type = SelectField('Payment Type',
+        choices=[('cash', 'Cash'), ('credit', 'Credit')],
+        validators=[DataRequired()]
+    )
+    amount_paid = DecimalField('Amount Paid',
+        validators=[DataRequired(), NumberRange(min=0)],
+        places=2
+    )
+    notes = TextAreaField('Notes')
+    submit = SubmitField('Record Sale')
+
+    def validate_imei(self, imei):
+        from app.models import Device
+        device = Device.query.filter_by(imei=imei.data).first()
+        if not device:
+            raise ValidationError('Device with this IMEI not found in inventory.')
+        if not device.is_available:
+            raise ValidationError('This device has already been sold.')
+
+    def validate_amount_paid(self, amount_paid):
+        if self.payment_type.data == 'cash' and amount_paid.data < self.sale_price.data:
+            raise ValidationError('For cash payments, the amount paid must equal the sale price.')
