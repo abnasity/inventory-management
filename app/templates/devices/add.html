@@ -2,6 +2,29 @@
 
 {% block title %}Add Device - Phone Sales Management{% endblock %}
 
+{% block extra_css %}
+<style>
+#interactive.viewport {
+    position: relative;
+    width: 100%;
+    height: 300px;
+}
+#interactive.viewport > canvas, #interactive.viewport > video {
+    max-width: 100%;
+    width: 100%;
+}
+canvas.drawing, canvas.drawingBuffer {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/barcode-scanner.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
@@ -19,7 +42,7 @@
                         
                         <div class="mb-3">
                             {{ form.imei.label(class="form-label") }}
-                            {{ form.imei(class="form-control", placeholder="Enter 15-digit IMEI") }}
+                            {{ imei_input(form.imei, "Enter 15-digit IMEI") }}
                             {% if form.imei.errors %}
                             <div class="invalid-feedback d-block">
                                 {% for error in form.imei.errors %}
@@ -89,4 +112,7 @@
         </div>
     </div>
 </div>
+
+<!-- Scanner Modal is included in base template -->
+
 {% endblock %}
