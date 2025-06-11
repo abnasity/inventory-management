@@ -15,7 +15,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ form.csrf_token }}
                         
                         <div class="mb-3">
                             <label class="form-label">IMEI</label>
@@ -24,32 +24,55 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="brand" class="form-label">Brand*</label>
-                            <input type="text" class="form-control" id="brand" name="brand" 
-                                   value="{{ device.brand }}" required>
+                            {{ form.brand.label(class="form-label") }}
+                            {{ form.brand(class="form-control") }}
+                            {% if form.brand.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.brand.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="model" class="form-label">Model*</label>
-                            <input type="text" class="form-control" id="model" name="model" 
-                                   value="{{ device.model }}" required>
+                            {{ form.model.label(class="form-label") }}
+                            {{ form.model(class="form-control") }}
+                            {% if form.model.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.model.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="purchase_price" class="form-label">Purchase Price*</label>
-                            <input type="number" step="0.01" min="0" class="form-control" 
-                                   id="purchase_price" name="purchase_price" 
-                                   value="{{ "%.2f"|format(device.purchase_price) }}" required>
+                            {{ form.purchase_price.label(class="form-label") }}
+                            {{ form.purchase_price(class="form-control") }}
+                            {% if form.purchase_price.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.purchase_price.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="notes" name="notes" 
-                                      rows="3">{{ device.notes or '' }}</textarea>
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows=3) }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.notes.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         
                         <div class="text-end">
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </form>
                 </div>
