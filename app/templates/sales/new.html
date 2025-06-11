@@ -9,19 +9,25 @@
                     <h2 class="card-title">New Sale</h2>
                 </div>
                 <div class="card-body">
-                    <form id="saleForm">
+                    <form id="saleForm" method="POST">
+                        {{ form.csrf_token }}
                         <!-- IMEI Scanner Section -->
                         <div class="mb-4">
-                            <label for="imei" class="form-label">Device IMEI</label>
+                            {{ form.imei.label(class="form-label") }}
                             <div class="input-group">
-                                <input type="text" class="form-control" id="imei" required 
-                                       pattern="[0-9]{15}" maxlength="15"
-                                       placeholder="Scan or enter 15-digit IMEI">
+                                {{ form.imei(class="form-control", placeholder="Scan or enter 15-digit IMEI") }}
                                 <button type="button" class="btn btn-primary" onclick="findDevice()">
                                     Find Device
                                 </button>
                             </div>
                             <div class="form-text">Scan barcode or enter 15-digit IMEI number</div>
+                            {% if form.imei.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.imei.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
 
                         <!-- Device Details Section (hidden initially) -->
@@ -35,41 +41,61 @@
 
                             <!-- Sale Details -->
                             <div class="mb-3">
-                                <label for="salePrice" class="form-label">Sale Price</label>
+                                {{ form.sale_price.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="salePrice" 
-                                           step="0.01" min="0" required>
+                                    {{ form.sale_price(class="form-control") }}
                                 </div>
+                                {% if form.sale_price.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.sale_price.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
 
                             <div class="mb-3">
-                                <label for="paymentType" class="form-label">Payment Type</label>
-                                <select class="form-select" id="paymentType" required onchange="togglePaymentFields()">
-                                    <option value="">Select payment type</option>
-                                    <option value="cash">Cash</option>
-                                    <option value="credit">Credit</option>
-                                </select>
+                                {{ form.payment_type.label(class="form-label") }}
+                                {{ form.payment_type(class="form-select", onchange="togglePaymentFields()") }}
+                                {% if form.payment_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.payment_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
 
                             <div class="mb-3">
-                                <label for="amountPaid" class="form-label">Amount Paid</label>
+                                {{ form.amount_paid.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" class="form-control" id="amountPaid" 
-                                           step="0.01" min="0" required>
+                                    {{ form.amount_paid(class="form-control") }}
                                 </div>
+                                {% if form.amount_paid.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.amount_paid.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
 
                             <div class="mb-3">
-                                <label for="notes" class="form-label">Notes</label>
-                                <textarea class="form-control" id="notes" rows="3"></textarea>
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control", rows=3) }}
+                                {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    Complete Sale
-                                </button>
+                                {{ form.submit(class="btn btn-success btn-lg") }}
                                 <button type="button" class="btn btn-secondary" onclick="resetForm()">
                                     Cancel
                                 </button>
