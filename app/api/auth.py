@@ -5,7 +5,7 @@ from app import db, bcrypt
 import jwt
 from datetime import datetime, timedelta
 
-bp = Blueprint('auth', __name__)
+bp = Blueprint('api_auth', __name__)
 
 def generate_token(user):
     """Generate JWT token for user"""
