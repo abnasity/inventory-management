@@ -29,7 +29,7 @@ class User(UserMixin, db.Model):
 
     def is_admin(self):
         """Check if user has admin role"""
-        return self.role == 'admin'
+        return str(self.role).lower() == 'admin'
     
     def to_dict(self):
         """Convert user object to dictionary for API responses"""
