@@ -124,27 +124,29 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addDeviceForm" method="POST" action="{{ url_for('devices.create_device') }}">
-                    {{ form.hidden_tag() }}
+                <form id="addDeviceForm" method="POST" action="{{ url_for('devices.add_device') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
-                        <label class="form-label">IMEI*</label>
-                        {{ form.imei(class="form-control", placeholder="Enter 15-digit IMEI") }}
+                        <label for="imei" class="form-label">IMEI*</label>
+                        <input type="text" class="form-control" id="imei" name="imei" required pattern="\d{15}"
+                               placeholder="Enter 15-digit IMEI">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Brand*</label>
-                        {{ form.brand(class="form-control") }}
+                        <label for="brand" class="form-label">Brand*</label>
+                        <input type="text" class="form-control" id="brand" name="brand" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Model*</label>
-                        {{ form.model(class="form-control") }}
+                        <label for="model" class="form-label">Model*</label>
+                        <input type="text" class="form-control" id="model" name="model" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Purchase Price*</label>
-                        {{ form.purchase_price(class="form-control", type="number", step="0.01") }}
+                        <label for="purchase_price" class="form-label">Purchase Price*</label>
+                        <input type="number" step="0.01" min="0" class="form-control" 
+                               id="purchase_price" name="purchase_price" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        {{ form.notes(class="form-control") }}
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
                     </div>
                 </form>
             </div>
@@ -160,15 +162,15 @@
 {% block extra_js %}
 <script>
 function viewDevice(imei) {
-    window.location.href = "{{ url_for('web_devices.view_device', imei='') }}" + imei;
+    window.location.href = "{{ url_for('devices.view_device', imei='') }}" + imei;
 }
 
 function createSale(imei) {
-    window.location.href = "{{ url_for('web_sales.create_sale', imei='') }}" + imei;
+    window.location.href = "{{ url_for('sales.new_sale') }}?imei=" + imei;
 }
 
 function editDevice(imei) {
-    window.location.href = "{{ url_for('web_devices.edit_device', imei='') }}" + imei;
+    window.location.href = "{{ url_for('devices.edit_device', imei='') }}" + imei;
 }
 </script>
 {% endblock %}
