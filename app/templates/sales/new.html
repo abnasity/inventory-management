@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% from "macros/components.html" import scanner_modal, imei_input %}
 
 {% block content %}
 <div class="container mt-4">
@@ -15,7 +16,7 @@
                         <div class="mb-4">
                             {{ form.imei.label(class="form-label") }}
                             <div class="input-group">
-                                {{ form.imei(class="form-control", placeholder="Scan or enter 15-digit IMEI") }}
+                                {{ imei_input(form.imei, "Scan or enter 15-digit IMEI") }}
                                 <button type="button" class="btn btn-primary" onclick="findDevice()">
                                     Find Device
                                 </button>
@@ -107,6 +108,29 @@
         </div>
     </div>
 </div>
+
+<!-- Scanner Modal -->
+<div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scannerModalLabel">Scan IMEI Barcode</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="interactive" class="viewport"></div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Point your camera at the IMEI barcode. Make sure it's well lit and clearly visible.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -209,6 +233,34 @@ document.getElementById('salePrice').addEventListener('change', function() {
     if (document.getElementById('paymentType').value === 'cash') {
         document.getElementById('amountPaid').value = this.value;
     }
+});
+
+// Scanner functionality
+function startScanner(imeiFieldId) {
+    const imeiField = document.getElementById(imeiFieldId);
+    const modal = new bootstrap.Modal(document.getElementById('scannerModal'));
+    
+    // Clear previous scan result
+    imeiField.value = '';
+    
+    // Start the scanner
+    Quagga.init({
+        inputStream : {
+            name : "Live",
+            type : "LiveStream",
+            target: document.getElementById('interactive')    // Or '#yourElement' (optional)
+        },
+        decoder : {
+            readers : ["ean_reader"] // List of active readers
+        },
+    }// Initialize scan functionality on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // After scan callback
+    document.addEventListener('barcodeScanned', function(e) {
+        const imei = e.detail.code;
+        document.getElementById('imei').value = imei;
+        findDevice();
+    });
 });
 </script>
 {% endblock %}
