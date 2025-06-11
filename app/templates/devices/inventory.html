@@ -125,28 +125,64 @@
             </div>
             <div class="modal-body">
                 <form id="addDeviceForm" method="POST" action="{{ url_for('devices.add_device') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {{ device_form.csrf_token }}
                     <div class="mb-3">
-                        <label for="imei" class="form-label">IMEI*</label>
-                        <input type="text" class="form-control" id="imei" name="imei" required pattern="\d{15}"
-                               placeholder="Enter 15-digit IMEI">
+                        {{ device_form.imei.label(class="form-label") }}
+                        {{ device_form.imei(class="form-control", placeholder="Enter 15-digit IMEI") }}
+                        {% if device_form.imei.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in device_form.imei.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="brand" class="form-label">Brand*</label>
-                        <input type="text" class="form-control" id="brand" name="brand" required>
+                        {{ device_form.brand.label(class="form-label") }}
+                        {{ device_form.brand(class="form-control") }}
+                        {% if device_form.brand.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in device_form.brand.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="model" class="form-label">Model*</label>
-                        <input type="text" class="form-control" id="model" name="model" required>
+                        {{ device_form.model.label(class="form-label") }}
+                        {{ device_form.model(class="form-control") }}
+                        {% if device_form.model.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in device_form.model.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="purchase_price" class="form-label">Purchase Price*</label>
-                        <input type="number" step="0.01" min="0" class="form-control" 
-                               id="purchase_price" name="purchase_price" required>
+                        {{ device_form.purchase_price.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ device_form.purchase_price(class="form-control") }}
+                        </div>
+                        {% if device_form.purchase_price.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in device_form.purchase_price.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        {{ device_form.notes.label(class="form-label") }}
+                        {{ device_form.notes(class="form-control", rows=3) }}
+                        {% if device_form.notes.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in device_form.notes.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                 </form>
             </div>
