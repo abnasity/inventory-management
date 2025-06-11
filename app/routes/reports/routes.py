@@ -16,21 +16,21 @@ def dashboard():
     previous_thirty_days = thirty_days_ago - timedelta(days=30)
     
     # Current period stats
-    current_sales = Sale.query.filter(Sale.created_at >= thirty_days_ago).count()
+    current_sales = Sale.query.filter(Sale.sale_date >= thirty_days_ago).count()
     current_revenue = db.session.query(
         func.sum(Sale.sale_price)
-    ).filter(Sale.created_at >= thirty_days_ago).scalar() or 0
+    ).filter(Sale.sale_date >= thirty_days_ago).scalar() or 0
     
     # Previous period stats for growth calculation
     previous_sales = Sale.query.filter(
-        Sale.created_at >= previous_thirty_days,
-        Sale.created_at < thirty_days_ago
+        Sale.sale_date >= previous_thirty_days,
+        Sale.sale_date < thirty_days_ago
     ).count()
     previous_revenue = db.session.query(
         func.sum(Sale.sale_price)
     ).filter(
-        Sale.created_at >= previous_thirty_days,
-        Sale.created_at < thirty_days_ago
+        Sale.sale_date >= previous_thirty_days,
+        Sale.sale_date < thirty_days_ago
     ).scalar() or 0
     
     # Calculate growth percentages
@@ -43,26 +43,34 @@ def dashboard():
         'total_revenue': current_revenue,
         'sales_growth': round(sales_growth, 1),
         'revenue_growth': round(revenue_growth, 1),
-        'available_devices': Device.query.filter_by(is_sold=False).count(),
+        'available_devices': Device.query.filter_by(status='available').count(),
         'outstanding_credit': db.session.query(
             func.sum(Sale.sale_price - Sale.amount_paid)
         ).filter(Sale.is_fully_paid == False).scalar() or 0
     }
     
     # Get sales data for chart
-    thirty_days_ago = datetime.now() - timedelta(days=30)
     sales_data = db.session.query(
-        func.date(Sale.created_at).label('date'),
-        func.count(Sale.id).label('count')
+        func.date(Sale.sale_date).label('date'),
+        func.count(Sale.id).label('count'),
+        func.sum(Sale.sale_price).label('revenue')
     ).filter(
-        Sale.created_at >= thirty_days_ago
+        Sale.sale_date >= thirty_days_ago
     ).group_by(
-        func.date(Sale.created_at)
-    ).all()
+        func.date(Sale.sale_date)
+    ).order_by(func.date(Sale.sale_date)).all()
+    
+    # Fill in missing dates with zero values
+    date_dict = {(thirty_days_ago + timedelta(days=i)).date(): {'count': 0, 'revenue': 0.0} 
+                for i in range(31)}
+    
+    for row in sales_data:
+        date_dict[row.date] = {'count': row.count, 'revenue': float(row.revenue or 0)}
     
     chart_data = {
-        'dates': [str(row.date) for row in sales_data],
-        'sales': [row.count for row in sales_data]
+        'dates': [str(date) for date in sorted(date_dict.keys())],
+        'sales': [data['count'] for data in date_dict.values()],
+        'revenue': [data['revenue'] for data in date_dict.values()]
     }
     
     # Get payment type breakdown
@@ -72,7 +80,7 @@ def dashboard():
     }
     
     # Get recent sales
-    recent_sales = Sale.query.order_by(Sale.created_at.desc()).limit(5).all()
+    recent_sales = Sale.query.order_by(Sale.sale_date.desc()).limit(5).all()
     
     # Get top products
     top_products = db.session.query(
@@ -102,22 +110,22 @@ def summary():
     cutoff_date = datetime.now() - timedelta(days=days)
     
     # Get sales metrics
-    total_sales = Sale.query.filter(Sale.created_at >= cutoff_date).count()
+    total_sales = Sale.query.filter(Sale.sale_date >= cutoff_date).count()
     total_revenue = db.session.query(
         func.sum(Sale.sale_price)
     ).filter(
-        Sale.created_at >= cutoff_date
+        Sale.sale_date >= cutoff_date
     ).scalar() or 0
     
     # Calculate growth rates
     prev_cutoff = cutoff_date - timedelta(days=days)
     prev_sales = Sale.query.filter(
-        Sale.created_at.between(prev_cutoff, cutoff_date)
+        Sale.sale_date.between(prev_cutoff, cutoff_date)
     ).count()
     prev_revenue = db.session.query(
         func.sum(Sale.sale_price)
     ).filter(
-        Sale.created_at.between(prev_cutoff, cutoff_date)
+        Sale.sale_date.between(prev_cutoff, cutoff_date)
     ).scalar() or 0
     
     sales_growth = ((total_sales - prev_sales) / prev_sales * 100) if prev_sales > 0 else 0
@@ -131,7 +139,7 @@ def summary():
             'revenue_growth': round(revenue_growth, 1)
         },
         'inventory_metrics': {
-            'available_devices': Device.query.filter_by(is_sold=False).count()
+            'available_devices': Device.query.filter_by(status='available').count()
         },
         'credit_metrics': {
             'total_outstanding': db.session.query(
