@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
+from flask_wtf.csrf import CSRFProtect
 from config import Config
 
 # Initialize Flask extensions
@@ -10,6 +11,7 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
+csrf = CSRFProtect()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -19,15 +21,16 @@ def load_user(user_id):
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-
-    # Initialize extensions with app
+    
+    # Initialize Flask extensions with app
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
     bcrypt.init_app(app)
+    csrf.init_app(app)
 
     # Configure login manager
-    login_manager.login_view = 'web_auth.login'
+    login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
 
@@ -45,10 +48,10 @@ def create_app(config_class=Config):
     from app.routes.reports import bp as reports_bp
     
     app.register_blueprint(main_bp, name='main')
-    app.register_blueprint(auth_bp, url_prefix='/auth', name='web_auth')
-    app.register_blueprint(devices_bp, url_prefix='/devices', name='web_devices')
-    app.register_blueprint(sales_bp, name='web_sales')
-    app.register_blueprint(reports_bp, url_prefix='/reports', name='web_reports')
+    app.register_blueprint(auth_bp, url_prefix='/auth', name='auth')
+    app.register_blueprint(devices_bp, url_prefix='/devices', name='devices')
+    app.register_blueprint(sales_bp, url_prefix='/sales', name='sales')
+    app.register_blueprint(reports_bp, url_prefix='/reports', name='reports')
     
     # Register API blueprints
     from app.api.auth import bp as auth_api_bp
