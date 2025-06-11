@@ -84,7 +84,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="addUserForm" action="{{ url_for('web_auth.create_user') }}" method="POST">
+                <form id="addUserForm" action="{{ url_for('auth.create_user') }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="mb-3">
                         <label for="username" class="form-label">Username*</label>
