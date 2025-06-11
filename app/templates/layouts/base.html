@@ -25,25 +25,24 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('web_devices.inventory') }}">
-                                <i class="fas fa-warehouse me-1"></i>Inventory
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('web_sales.index') }}">
-                                <i class="fas fa-shopping-cart me-1"></i>Sales
-                            </a>
-                        </li>
-                        {% if current_user.is_admin() %}
+                    {% if current_user.is_authenticated %}                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('devices.inventory') }}">
+                                    <i class="fas fa-warehouse me-1"></i>Inventory
+                                </a>
+                            </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('web_reports.dashboard') }}">
+                                <a class="nav-link" href="{{ url_for('sales.index') }}">
+                                    <i class="fas fa-shopping-cart me-1"></i>Sales
+                                </a>
+                            </li>
+                            {% if current_user.is_admin() %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('reports.dashboard') }}">
                                     <i class="fas fa-chart-bar me-1"></i>Reports
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('web_auth.users') }}">
+                                <a class="nav-link" href="{{ url_for('auth.users') }}">
                                     <i class="fas fa-users me-1"></i>Users
                                 </a>
                             </li>
@@ -58,13 +57,13 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
-                                    <a class="dropdown-item" href="{{ url_for('web_auth.profile') }}">
+                                    <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
                                         <i class="fas fa-id-card me-1"></i>Profile
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
-                                    <a class="dropdown-item" href="{{ url_for('web_auth.logout') }}">
+                                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
                                         <i class="fas fa-sign-out-alt me-1"></i>Logout
                                     </a>
                                 </li>
@@ -72,7 +71,7 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('web_auth.login') }}">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
                                 <i class="fas fa-sign-in-alt me-1"></i>Login
                             </a>
                         </li>
