@@ -207,52 +207,57 @@ def bulk_update_status():
             'error': f'Database error: {str(e)}'
         }), 500
 
-@bp.route('/users/<int:user_id>/edit', methods=['POST'])
+@bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_user(user_id):
     """Handle user edit form submission"""
     user = User.query.get_or_404(user_id)
+    form = RegisterForm()
+
+    if request.method == 'POST':
+        try:
+            # Check if it's an attempt to modify the current admin's role
+            if user.id == current_user.id and form.role.data != 'admin' and user.role == 'admin':
+                return jsonify({'success': False, 'error': 'Cannot remove admin role from yourself'})
+            
+            # Validate required fields
+            if not form.username.data or not form.email.data or not form.role.data:
+                return jsonify({'success': False, 'error': 'Please fill in all required fields'})
+            
+            if form.role.data not in ['admin', 'staff']:
+                return jsonify({'success': False, 'error': 'Invalid role selected'})
+            
+            # Check if username/email are taken by other users
+            username_exists = User.query.filter(User.username == form.username.data, User.id != user_id).first()
+            email_exists = User.query.filter(User.email == form.email.data, User.id != user_id).first()
+            
+            if username_exists:
+                return jsonify({'success': False, 'error': 'Username already exists'})
+            if email_exists:
+                return jsonify({'success': False, 'error': 'Email already registered'})
     
-    # Check if it's an attempt to modify the current admin's role
-    if user.id == current_user.id and user.role == 'admin' and request.form.get('role') != 'admin':
-        flash('Cannot remove admin role from yourself', 'danger')
-        return redirect(url_for('auth.users'))
+            # Update user
+            user.username = form.username.data
+            user.email = form.email.data
+            user.role = form.role.data
+            
+            if form.password.data:
+                user.set_password(form.password.data)
+            
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'User updated successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'error': str(e)})
     
-    # Update user data
-    username = request.form.get('username')
-    email = request.form.get('email')
-    role = request.form.get('role')
-    new_password = request.form.get('password')
-    
-    # Validate required fields
-    if not all([username, email, role]) or role not in ['admin', 'staff']:
-        flash('Please fill in all required fields correctly', 'danger')
-        return redirect(url_for('auth.users'))
-    
-    # Check if username/email are taken by other users
-    username_exists = User.query.filter(User.username == username, User.id != user_id).first()
-    email_exists = User.query.filter(User.email == email, User.id != user_id).first()
-    
-    if username_exists:
-        flash('Username already exists', 'danger')
-        return redirect(url_for('auth.users'))
-    if email_exists:
-        flash('Email already registered', 'danger')
-        return redirect(url_for('auth.users'))
-    
-    # Update user
-    user.username = username
-    user.email = email
-    user.role = role
-    if new_password:
-        user.set_password(new_password)
-    
-    try:
-        db.session.commit()
-        flash('User updated successfully', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error updating user: ' + str(e), 'danger')
-    
-    return redirect(url_for('auth.users'))
+    # GET request - return user data
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'role': user.role
+    })
+
+
