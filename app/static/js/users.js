@@ -39,8 +39,11 @@ function toggleUserStatus(userId, action) {
 
 async function editUser(userId) {
     try {
-        const response = await fetchWithCsrf(`/auth/users/${userId}`);
+        const response = await fetchWithCsrf(`/auth/users/${userId}/edit`);
         const user = await response.json();
+        
+        // Clear previous error messages
+        clearEditFormErrors();
         
         // Fill the edit form with user data
         document.getElementById('edit_user_id').value = user.id;
@@ -54,8 +57,70 @@ async function editUser(userId) {
         editModal.show();
     } catch (error) {
         console.error('Error:', error);
-        alert('Failed to load user data: ' + error.message);
+        showAlert('danger', 'Failed to load user data: ' + error.message);
     }
+}
+
+// Handle edit form submission
+document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Clear previous error messages
+    clearEditFormErrors();
+    
+    const userId = document.getElementById('edit_user_id').value;
+    const formData = {
+        username: document.getElementById('edit_username').value,
+        email: document.getElementById('edit_email').value,
+        role: document.getElementById('edit_role').value,
+        password: document.getElementById('edit_password').value
+    };
+    
+    try {
+        const response = await fetchWithCsrf(`/auth/users/${userId}/edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            showAlert('success', result.message);
+            // Reload page after short delay to show the alert
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert('danger', result.error);
+            if (result.errors) {
+                displayFormErrors(result.errors);
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showAlert('danger', 'Failed to update user');
+    }
+});
+
+function clearEditFormErrors() {
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+}
+
+function displayFormErrors(errors) {
+    Object.entries(errors).forEach(([field, message]) => {
+        const input = document.getElementById(`edit_${field}`);
+        if (input) {
+            input.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = message;
+            input.parentNode.appendChild(feedback);
+        }
+    });
 }
 
 // Handle bulk selections
