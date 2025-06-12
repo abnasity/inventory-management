@@ -66,11 +66,16 @@ class DeviceForm(FlaskForm):
     notes = TextAreaField('Notes')
     submit = SubmitField('Save Device')
 
+    def __init__(self, original_imei=None, *args, **kwargs):
+        super(DeviceForm, self).__init__(*args, **kwargs)
+        self.original_imei = original_imei
+
     def validate_imei(self, imei):
         from app.models import Device
-        device = Device.query.filter_by(imei=imei.data).first()
-        if device:
-            raise ValidationError('This IMEI is already registered in the system.')
+        if self.original_imei != imei.data:
+            device = Device.query.filter_by(imei=imei.data).first()
+            if device:
+                raise ValidationError('This IMEI is already registered in the system.')
 
 class SaleForm(FlaskForm):
     imei = StringField('IMEI', validators=[
