@@ -51,10 +51,17 @@ def view_device(imei):
 def edit_device(imei):
     """Edit device details"""
     device = Device.query.filter_by(imei=imei).first_or_404()
-    form = DeviceForm(obj=device)
+    form = DeviceForm(original_imei=imei, obj=device)
     
+    if request.method == 'POST':
+        # Ensure IMEI doesn't change
+        form.imei.data = device.imei
+        
     if form.validate_on_submit():
-        form.populate_obj(device)
+        device.brand = form.brand.data
+        device.model = form.model.data
+        device.purchase_price = form.purchase_price.data
+        device.notes = form.notes.data
         
         try:
             db.session.commit()
