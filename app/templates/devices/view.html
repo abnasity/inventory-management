@@ -32,7 +32,7 @@
                         <dd class="col-sm-9">{{ device.model }}</dd>
 
                         <dt class="col-sm-3">Purchase Price</dt>
-                        <dd class="col-sm-9">${{ "%.2f"|format(device.purchase_price) }}</dd>
+                        <dd class="col-sm-9">Ksh {{ "%.2f"|format(device.purchase_price) }}</dd>
 
                         <dt class="col-sm-3">Status</dt>
                         <dd class="col-sm-9">
@@ -48,7 +48,7 @@
                         <dt class="col-sm-3">Sale Information</dt>
                         <dd class="col-sm-9">
                             <p>Sold on: {{ device.sale.sale_date.strftime('%Y-%m-%d') }}</p>
-                            <p>Sale Price: ${{ "%.2f"|format(device.sale.sale_price) }}</p>
+                            <p>Sale Price: Ksh {{ "%.2f"|format(device.sale.sale_price) }}</p>
                             <p>Payment Type: {{ device.sale.payment_type.title() }}</p>
                             <p>Seller: {{ device.sale.seller.username }}</p>
                         </dd>
