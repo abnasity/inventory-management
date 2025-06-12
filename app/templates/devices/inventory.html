@@ -79,7 +79,7 @@
                         <td>{{ device.imei }}</td>
                         <td>{{ device.brand }}</td>
                         <td>{{ device.model }}</td>
-                        <td>${{ "%.2f"|format(device.purchase_price) }}</td>
+                        <td>Ksh {{ "%.2f"|format(device.purchase_price) }}</td>
                         <td>
                             <span class="badge bg-{{ 'success' if device.status == 'available' else 'secondary' }}">
                                 {{ device.status }}
@@ -98,11 +98,10 @@
                                     <i class="fas fa-shopping-cart"></i>
                                 </button>
                                 {% endif %}
-                                {% if current_user.is_admin() %}
-                                <button type="button" class="btn btn-sm btn-warning"
-                                        onclick="editDevice('{{ device.imei }}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+                                {% if device.is_available and current_user.is_admin() %}
+                                    <a href="{{ url_for('devices.edit_device', imei=device.imei) }}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-edit "></i>
+                                     </a>
                                 {% endif %}
                             </div>
                         </td>
@@ -207,6 +206,7 @@ function createSale(imei) {
 
 function editDevice(imei) {
     window.location.href = "{{ url_for('devices.edit_device', imei='') }}" + imei;
+    
 }
 </script>
 {% endblock %}
