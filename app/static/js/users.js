@@ -1,37 +1,45 @@
-function toggleUserStatus(userId, action) {
-    if (!confirm(`Are you sure you want to ${action} this user?`)) {
-        return;
-    }
+// Get CSRF token from meta tag
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
 
-    fetch(`/auth/users/${userId}/toggle_status`, {
+// Helper function for making fetch requests with CSRF token
+async function fetchWithCsrf(url, options = {}) {
+    // Ensure options.headers exists
+    options.headers = options.headers || {};
+    
+    // Add CSRF token to headers
+    options.headers['X-CSRFToken'] = getCsrfToken();
+    
+    // Make the fetch request
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response;
+}
+
+function toggleUserStatus(userId, action) {
+    fetchWithCsrf(`/auth/users/${userId}/toggle_status`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
-        }
     })
     .then(response => response.json())
     .then(data => {
-        if (!data.success) {
-            alert(data.error);
+        if (data.success) {
+            location.reload();
         } else {
-            alert(data.message);
-            location.reload(); // Refresh to show updated status
+            alert(data.error || 'Failed to update user status');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while updating user status');
+        alert('Failed to update user status');
     });
 }
 
 async function editUser(userId) {
     try {
-        const response = await fetch(`/auth/users/${userId}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch user data');
-        }
-
+        const response = await fetchWithCsrf(`/auth/users/${userId}`);
         const user = await response.json();
         
         // Fill the edit form with user data
@@ -40,10 +48,6 @@ async function editUser(userId) {
         document.getElementById('edit_email').value = user.email;
         document.getElementById('edit_role').value = user.role;
         document.getElementById('edit_password').value = ''; // Clear password field
-
-        // Set the form action with the correct URL prefix
-        const form = document.getElementById('editUserForm');
-        form.action = `/auth/users/${userId}/edit`;
 
         // Show the modal
         const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
@@ -77,9 +81,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateBulkActionsVisibility() {
         const selectedCount = document.querySelectorAll('.user-select:checked').length;
-        selectedCountBadge.textContent = selectedCount;
         bulkActionsBtn.disabled = selectedCount === 0;
         bulkActionsDropdown.style.display = selectedCount > 0 ? 'block' : 'none';
+        selectedCountBadge.textContent = selectedCount;
     }
 });
 
@@ -93,25 +97,19 @@ async function bulkDeactivate() {
 }
 
 async function bulkUpdateStatus(activate) {
-    const selectedUsers = Array.from(document.querySelectorAll('.user-select:checked'))
+    const selectedUserIds = Array.from(document.querySelectorAll('.user-select:checked'))
         .map(checkbox => checkbox.value);
-    
-    if (!selectedUsers.length) return;
-    
-    const action = activate ? 'activate' : 'deactivate';
-    if (!confirm(`Are you sure you want to ${action} ${selectedUsers.length} users?`)) {
-        return;
-    }
+
+    if (!selectedUserIds.length) return;
 
     try {
-        const response = await fetch('/auth/users/bulk_status', {
+        const response = await fetchWithCsrf('/auth/users/bulk_status', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
             },
             body: JSON.stringify({
-                user_ids: selectedUsers,
+                user_ids: selectedUserIds,
                 activate: activate
             })
         });
@@ -124,7 +122,7 @@ async function bulkUpdateStatus(activate) {
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred during bulk update');
+        alert('Failed to update users');
     }
 }
 
@@ -209,3 +207,100 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Function to handle edit user form submission
+async function handleEditUser(userId) {
+    // Clear previous errors
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    // Get user data
+    try {
+        const response = await fetch(`/users/${userId}/edit`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch user data');
+        
+        const userData = await response.json();
+        
+        // Populate form
+        document.getElementById('edit_username').value = userData.username;
+        document.getElementById('edit_email').value = userData.email;
+        document.getElementById('edit_role').value = userData.role;
+        document.getElementById('edit_user_id').value = userId;
+        
+        // Show modal
+        const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+        editModal.show();
+        
+    } catch (error) {
+        showAlert('error', 'Failed to load user data');
+    }
+}
+
+// Handle form submission
+document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const userId = document.getElementById('edit_user_id').value;
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch(`/users/${userId}/edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and refresh page
+            bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+            showAlert('success', 'User updated successfully');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            // Display error message
+            showAlert('error', result.error);
+            
+            // Highlight invalid fields if specified
+            if (result.errors) {
+                Object.entries(result.errors).forEach(([field, message]) => {
+                    const input = document.getElementById(`edit_${field}`);
+                    if (input) {
+                        input.classList.add('is-invalid');
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = message;
+                        input.parentNode.appendChild(feedback);
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        showAlert('error', 'An error occurred while updating the user');
+    }
+});
+
+// Helper function to show alerts
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => alertDiv.remove(), 5000);
+}
