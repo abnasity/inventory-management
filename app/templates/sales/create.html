@@ -54,7 +54,7 @@
                                 </tr>
                                 <tr>
                                     <th>Purchase Price:</th>
-                                    <td id="devicePrice">{% if device %}${{ "%.2f"|format(device.purchase_price) }}{% endif %}</td>
+                                    <td id="devicePrice">{% if device %}Ksh{{ "%.2f"|format(device.purchase_price) }}{% endif %}</td>
                                 </tr>
                             </table>
                         </div>
