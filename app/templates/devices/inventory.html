@@ -208,4 +208,6 @@ function editDevice(imei) {
     window.location.href = "{{ url_for('devices.edit_device', imei='') }}" + imei;
 }
 </script>
+{% endblock extra_js %}
 {% endblock content %}
+
